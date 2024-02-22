@@ -1,0 +1,2 @@
+# Mini
+ c++ mini project
