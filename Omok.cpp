@@ -7,6 +7,7 @@
 #include <deque>
 #include <algorithm>
 #include <Windows.h>
+#include <vector>
 
 using namespace std;
 
@@ -22,8 +23,17 @@ using namespace std;
 
 unsigned int dol[Y_LINE][X_LINE];
 unsigned int order = 1;
-unsigned int ending = 0;
 unsigned int game_mode = 0;
+pair<int, int> computer_dol;
+
+void drawMap(HWND hand);
+void checkNear(int y, int x, vector<vector<int>>& visited);
+pair<int, int> whiteAI();
+pair<int, int> buttonDown(HWND hwnd, int x, int y);
+int checkLineValue(pair<int, int> loc);
+LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam);
+int WINAPI main(HINSTANCE hIns, HINSTANCE hPrevIns, LPSTR lpCmdLine, int nCmdShow);
+
 
 void drawMap(HWND hwnd) {
 	PAINTSTRUCT ps;
@@ -56,10 +66,74 @@ void drawMap(HWND hwnd) {
 	EndPaint(hwnd, &ps);
 }
 
-//minimax 알고리즘 적용하여 ai의 돌 놓기
-//ai가 이전에 놓았던 자리와, 내가 놓았던 자리에서 비교하기 되나?
-void whiteAI(int x, int y) {
+void checkNear(int y, int x, vector<vector<int>>& visited) {
+	int dx[8] = {1, 1, 1, 0, 0, -1, -1, -1};
+	int dy[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+	int max_value = 0;
+	for (int i = 0; i < 8; i++) {
+		int newx = x + dx[i];
+		int newy = y + dy[i];
+		if (newx < 0 || newx >= X_LINE || newy < 0 || newy >= Y_LINE) {
+			continue;
+		}
+		if (dol[newy][newx] != 0) {
+			continue;
+		}
+		dol[newy][newx] = order;
+		int t = checkLineValue(pair<int, int>(newx, newy));
+		dol[newy][newx] = 0;
+		visited[newy][newx] = max(visited[newy][newx], t);
+	}
 	
+
+}
+
+//현재 놓여있는 돌들의 점수를 계산해서 위치 파악하기?
+pair<int, int> whiteAI() {
+	vector<vector<int>> visited(X_LINE, vector<int> (Y_LINE, 0));
+	for (int i = 0; i < Y_LINE; i++) {
+		for (int j = 0; j < X_LINE; j++) {
+			if (dol[i][j] == 0) {
+				continue;
+			}
+			checkNear(i, j, visited);
+			if (order == 1) {
+				order = 2;
+			}
+			else {
+				order = 1;
+			}
+			checkNear(i, j, visited);
+			if (order == 1) {
+				order = 2;
+			}
+			else {
+				order = 1;
+			}
+		}
+	}
+	int max_value = 0;
+	vector<pair<int, int>> marking;
+
+	for (int i = 0; i < Y_LINE; i++) {
+		for (int j = 0; j < X_LINE; j++) {
+			cout << visited[i][j] << " ";
+			if (visited[i][j] > max_value) {
+				marking.clear();
+				marking.push_back(pair<int, int>(i, j));
+				max_value = visited[i][j];
+			}
+			else if (visited[i][j] == max_value) {
+				marking.push_back(pair<int, int>(i, j));
+			}
+		}
+		cout << endl;
+	}
+
+	int markingsize = marking.size();
+	int choose = rand() % markingsize;
+
+	return { marking[choose].first, marking[choose].second };
 }
 
 pair<int, int> buttonDown(HWND hwnd, int x, int y) {
@@ -84,7 +158,7 @@ pair<int, int> buttonDown(HWND hwnd, int x, int y) {
 		else {
 			if (dol[dol_y][dol_x] == 0) {
 				dol[dol_y][dol_x] = order;
-				whiteAI(dol_x, dol_y);
+
 				InvalidateRect(hwnd, NULL, TRUE);
 				return pair<int, int>(dol_x, dol_y);
 			}
@@ -95,6 +169,147 @@ pair<int, int> buttonDown(HWND hwnd, int x, int y) {
 	return pair<int, int>(-1, -1);
 }
 
+// 게임오버를 검사하는 함수에서, 컴퓨터가 알을 놓기위한 점수 계산방식으로 바꿈
+int checkLineValue(pair<int, int> loc) {
+	if (loc.first == -1 && loc.second == -1) {
+		return 0;
+	}
+	int x = loc.first;
+	int y = loc.second;
+	int dol_color = dol[y][x];
+	int garo = 1;
+	int sero = 1;
+	int tentofive = 1;
+	int seventotwo = 1;
+	int count = 0;
+	int max_value = 0;
+
+	for (int i = x - 1; i >= 0; i--) {
+		if (count++ > 5) {
+			break;
+		}
+		if (dol[y][i] == dol_color) {
+			garo++;
+		}
+		else {
+			break;
+		}
+	}
+
+	for (int i = x + 1; i <= X_LINE; i++) {
+		if (count++ > 5) {
+			break;
+		}
+		if (dol[y][i] == dol_color) {
+			garo++;
+		}
+		else {
+			break;
+		}
+	}
+
+	max_value = max(max_value, garo);
+
+	count = 0;
+
+	for (int i = y - 1; i >= 0; i--) {
+		if (count++ > 5) {
+			break;
+		}
+		if (dol[i][x] == dol_color) {
+			sero++;
+		}
+		else {
+			break;
+		}
+	}
+
+	for (int i = y + 1; i <= Y_LINE; i++) {
+		if (count++ > 5) {
+			break;
+		}
+		if (dol[i][x] == dol_color) {
+			sero++;
+		}
+		else {
+			break;
+		}
+	}
+
+	max_value = max(max_value, sero);
+
+	count = 0;
+
+	int temp_x = x - 1;
+
+	for (int i = y - 1; i >= 0; i--) {
+		if (temp_x < 0 || count++ > 5) {
+			break;
+		}
+		if (dol[i][temp_x--] == dol_color) {
+			tentofive++;
+		}
+		else {
+			break;
+		}
+	}
+
+	temp_x = x + 1;
+
+	for (int i = y + 1; i <= Y_LINE; i++) {
+		if (temp_x > X_LINE || count++ > 5) {
+			break;
+		}
+		if (dol[i][temp_x++] == dol_color) {
+			tentofive++;
+		}
+		else {
+			break;
+		}
+	}
+
+	max_value = max(max_value, tentofive);
+
+	count = 0;
+
+	temp_x = x + 1;
+	for (int i = y - 1; i >= 0; i--) {
+		if (temp_x > X_LINE || count++ > 5) {
+			break;
+		}
+		if (dol[i][temp_x++] == dol_color) {
+			seventotwo++;
+		}
+		else {
+			break;
+		}
+	}
+	temp_x = x - 1;
+	for (int i = y + 1; i <= Y_LINE; i++) {
+		if (temp_x < 0 || count++ > 5) {
+			break;
+		}
+		if (dol[i][temp_x--] == dol_color) {
+			seventotwo++;
+		}
+		else {
+			break;
+		}
+	}
+
+	max_value = max(max_value, seventotwo);
+	if (max_value == 4) {
+		max_value = 7;
+	}
+	else if (max_value == 5) {
+		max_value = 10;
+	}
+	count = 0;
+
+	return max_value;
+}
+
+/*
 int checkGameOver(pair<int, int> loc) {
 	if (loc.first == -1 && loc.second == -1) {
 		return 0 ;
@@ -235,6 +450,7 @@ int checkGameOver(pair<int, int> loc) {
 
 	return 0;
 }
+*/
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 	
@@ -244,21 +460,62 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 	else if (umsg == WM_LBUTTONDOWN) {
 		
 		auto loc = buttonDown(hwnd, (int)LOWORD(lparam), (int)HIWORD(lparam));
-		ending = checkGameOver(loc);
-		if (ending == 1) {
-			MessageBox(hwnd, L"흑돌승리", L"Black Win!", MB_OK);
-			memset(dol, 0, sizeof(dol));
-			ending = 0;
-			order = 1;
-			InvalidateRect(hwnd, NULL, TRUE);
+		if (game_mode == 1) {
+			unsigned int value = checkLineValue(loc);
+			if (order == 2 && value == 10) {
+				MessageBox(hwnd, L"흑돌승리", L"Black Win!", MB_OK);
+				memset(dol, 0, sizeof(dol));
+				order = 1;
+				InvalidateRect(hwnd, NULL, TRUE);
+			}
+			else if (order == 1 && value == 10) {
+				MessageBox(hwnd, L"백돌승리", L"White Win!", MB_OK);
+				memset(dol, 0, sizeof(dol));
+				order = 1;
+				InvalidateRect(hwnd, NULL, TRUE);
+			}
 		}
-		else if (ending == 2) {
-			MessageBox(hwnd, L"백돌승리", L"White Win!", MB_OK);
-			memset(dol, 0, sizeof(dol));
-			ending = 0;
-			order = 1;
-			InvalidateRect(hwnd, NULL, TRUE);
+		else {
+			unsigned int value = checkLineValue(loc);
+			if (value == 10) {
+				MessageBox(hwnd, L"흑돌승리", L"Black Win!", MB_OK);
+				memset(dol, 0, sizeof(dol));
+				order = 1;
+				InvalidateRect(hwnd, NULL, TRUE);
+			}
+			else {
+				if (order == 1) {
+					order++;
+				}
+				else {
+					order--;
+				}
+				pair<int, int> com = whiteAI();
+				if (order == 1) {
+					order++;
+				}
+				else {
+					order--;
+				}
+
+				computer_dol.first = com.first;
+				computer_dol.second = com.second;
+
+				dol[computer_dol.first][computer_dol.second] = 2;
+				cout << computer_dol.first << computer_dol.second << endl;
+				value = checkLineValue(computer_dol);
+				cout << value << endl;
+				if (value == 10) {
+					MessageBox(hwnd, L"백돌승리", L"Black Win!", MB_OK);
+					memset(dol, 0, sizeof(dol));
+					order = 1;
+					InvalidateRect(hwnd, NULL, TRUE);
+				}
+			}
+
+
 		}
+
 
 	}
 	else if (umsg == WM_DESTROY) {
