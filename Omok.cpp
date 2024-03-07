@@ -183,7 +183,7 @@ PII whiteAI() {
 				marking.push_back(PII(i, j));
 			}
 		}
-		cout << endl;
+		//cout << endl;
 	}
 
 	int markingsize = marking.size();
@@ -281,7 +281,7 @@ int checkLineValue(PII loc) {
 	case 4:
 		max_value += 20;
 		break;
-	default:
+	case 5:
 		max_value += 100;
 		completed_dol_loc.clear();
 		completed_dol_loc.insert(completed_dol_loc.begin(), temp.begin(), temp.end());
@@ -332,7 +332,7 @@ int checkLineValue(PII loc) {
 	case 4:
 		max_value += 20;
 		break;
-	default:
+	case 5:
 		max_value += 100;
 		completed_dol_loc.clear();
 		completed_dol_loc.insert(completed_dol_loc.begin(), temp.begin(), temp.end());
@@ -388,7 +388,7 @@ int checkLineValue(PII loc) {
 	case 4:
 		max_value += 20;
 		break;
-	default:
+	case 5:
 		max_value += 100;
 		completed_dol_loc.clear();
 		completed_dol_loc.insert(completed_dol_loc.begin(), temp.begin(), temp.end());
@@ -442,7 +442,7 @@ int checkLineValue(PII loc) {
 	case 4:
 		max_value += 20;
 		break;
-	default:
+	case 5:
 		max_value += 100;
 		completed_dol_loc.clear();
 		completed_dol_loc.insert(completed_dol_loc.begin(), temp.begin(), temp.end());
@@ -608,7 +608,7 @@ void WinDolChange(HWND hwnd, int dol_color) {
 	PAINTSTRUCT ps;
 	sort(completed_dol_loc.begin(), completed_dol_loc.end(), cmp);
 	for (PII loc : completed_dol_loc) {
-		cout << loc.first << loc.second << endl;
+		//cout << loc.first << loc.second << endl;
 		if (dol_color == BLACK) {
 			dol[loc.first][loc.second] = BLACK_WIN;
 		}
@@ -620,7 +620,7 @@ void WinDolChange(HWND hwnd, int dol_color) {
 
 
 	InvalidateRect(hwnd, NULL, TRUE);
-	drawMap(hwnd);
+
 
 	EndPaint(hwnd, &ps);
 	return;
@@ -662,8 +662,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 		else {
 			unsigned int value = checkLineValue(loc);
 			// 컴퓨터가 돌을 놓는 것을 좀 더 자연스럽게 검은 돌 두고 화면 갱신
-			InvalidateRect(hwnd, NULL, TRUE);
-			drawMap(hwnd);
+			
 			if (value >= WIN_SCORE) {
 				WinDolChange(hwnd, BLACK);
 				MessageBox(hwnd, L"흑돌승리", L"Black Win!", MB_OK);
@@ -672,6 +671,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 				InvalidateRect(hwnd, NULL, TRUE);
 			}
 			else {
+				SendMessage(hwnd, WM_PAINT, NULL, NULL);
+				Sleep(1000);
 				PII com = whiteAI();
 				
 				dol[com.first][com.second] = 2;
@@ -679,9 +680,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 				value = checkLineValue(com);
 				order = BLACK;
 				// 컴퓨터가 돌을 놓는 것을 좀 더 자연스럽게 흰 돌 두고 1초뒤 화면 갱신
-				Sleep(1000);
 				InvalidateRect(hwnd, NULL, TRUE);
-				drawMap(hwnd);
+				
 				if (value >= WIN_SCORE) {
 					WinDolChange(hwnd, WHITE);
 					MessageBox(hwnd, L"백돌승리", L"Black Win!", MB_OK);
