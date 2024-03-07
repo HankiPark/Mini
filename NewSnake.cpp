@@ -11,13 +11,13 @@
 #include <deque>
 
 using namespace std;
-
-#define WIDTH_LINE		30
-#define HEIGHT_LINE		30
+// 82 , 45
+#define WIDTH_LINE		41
+#define HEIGHT_LINE		22
 
 #define WHITE_SPACE 50
 
-#define INTERVAL	10
+#define INTERVAL	40
 #define RADIUS		(INTERVAL / 2)
 
 #define POS(x)		(WHITE_SPACE + (x) * INTERVAL)
@@ -74,7 +74,7 @@ void drawMap(HWND hwnd) {
 	wsprintfW(word, L"score : %d", score * 10);
 	SetBkMode(hdc, TRANSPARENT);
 	SetTextColor(hdc, RGB(255, 255, 255));
-	TextOut(hdc, POS(WIDTH_LINE * 3 / 4), WHITE_SPACE / 2,  word , lstrlen(word));
+	TextOut(hdc, POS(WIDTH_LINE) - WHITE_SPACE - INTERVAL * 2, WHITE_SPACE / 2, word, lstrlen(word));
 
 
 	//¿Ü°¢¼±
@@ -184,7 +184,7 @@ void checkApple(HWND hwnd) {
 
 void speedUp(HWND hwnd) {
 	if (speed > MAX_SPEED) {
-		speed -= 10;
+		speed -= 30;
 		KillTimer(hwnd, 1);
 		SetTimer(hwnd, 1, speed, &TimerProc);
 	}
@@ -232,7 +232,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 		}
 		start = 1;
 		InvalidateRect(hwnd, NULL, TRUE);
-		drawMap(hwnd);
+		
 	}
 	else if (umsg == WM_DESTROY) {
 		KillTimer(hwnd, 1);
@@ -274,12 +274,12 @@ VOID CALLBACK TimerProc(HWND hwnd, UINT, UINT_PTR idEvent, DWORD)
 		checkApple(hwnd);
 
 		if (checkBody(hwnd) == 1 || checkWall(hwnd) == 1) {
-			drawMap(hwnd);
+			
 			InvalidateRect(hwnd, NULL, TRUE);
 			gameOver(hwnd);
 		}
 
-		drawMap(hwnd);
+		
 		InvalidateRect(hwnd, NULL, TRUE);
 	}
 
